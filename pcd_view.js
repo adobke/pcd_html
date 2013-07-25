@@ -1,8 +1,14 @@
 var camera, scene, renderer, controls;
 var container = document.getElementById('container');
 
-init();
-animate();
+getFile("test.pcd", function(text) {
+  if (text === null) {
+    console.log("read error");
+  } else {
+    init(text);
+    animate();
+  }
+});
 
 function getFile(url,callback) {
   var xhr = new XMLHttpRequest();
@@ -16,46 +22,37 @@ function getFile(url,callback) {
   }
 }
 
-function init() {
-    camera = new THREE.PerspectiveCamera( 75, container.offsetWidth / container.offsetHeight, 1, 300 );
-    camera.position.z = 15;
-    controls = new THREE.OrbitControls( camera );
-    controls.addEventListener( 'change', render );
+function init(text) {
+  camera = new THREE.PerspectiveCamera( 75, container.offsetWidth / container.offsetHeight, 1, 300 );
+  camera.position.z = 15;
+  controls = new THREE.OrbitControls( camera );
+  controls.addEventListener( 'change', render );
 
-    scene = new THREE.Scene();
+  scene = new THREE.Scene();
 
-    var PI2 = Math.PI * 2;
-    var program = function ( context ) {
-      context.beginPath();
-      context.arc( 0, 0, 1, 0, PI2, true );
-      context.fill();
-    }
+  geometry = new THREE.Geometry();
 
-    points = new THREE.Object3D();
-    scene.add(points);
+  var lines = text.split("\n");
+  for (var i = 15; i < lines.length; ++i) {
+    coords = lines[i].split(" ");
+    var vertex = new THREE.Vector3();
+    vertex.x = coords[0];
+    vertex.y = coords[1];
+    vertex.z = coords[2];
+    geometry.vertices.push( vertex );
+    geometry.colors.push(new THREE.Color("rgb(255,0,0"));
+  }
+  console.log("points loaded");
+  materials = new THREE.ParticleBasicMaterial( {size: .05, color: "#ff0000"} );
+  particles = new THREE.ParticleSystem(geometry, materials);
+  scene.add( particles );
 
-    getFile("test.pcd", function(text) {
-      if (text === null) {
-        console.log("read error");
-      } else {
-        var lines = text.split("\n");
-        for (var i = 0; i < lines.length/4; ++i) {
-          coords = lines[i].split(' ');
-          particle = new THREE.Particle( new THREE.ParticleCanvasMaterial( { color:  0x808080, program: program } ) );
-          particle.position.x = coords[0];
-          particle.position.y = coords[1];
-          particle.position.z = coords[2];
-          particle.scale.x = particle.scale.y = .025;
-          points.add( particle );
-        }
-      }
-    });
-
-    renderer = new THREE.CanvasRenderer({ antialias: false });
-    renderer.setSize( container.offsetWidth, container.offsetHeight );
-    renderer.setClearColor(0x222222, 1);
-    container.appendChild(renderer.domElement);
-    window.addEventListener( 'resize', onWindowResize, false );
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize( container.offsetWidth, container.offsetHeight );
+  renderer.setClearColor(0x222222, 1);
+  container.appendChild(renderer.domElement);
+  window.addEventListener( 'resize', onWindowResize, false );
+  controls.center = new THREE.Vector3(5,-4,0);
 }
 
 function onWindowResize() {
